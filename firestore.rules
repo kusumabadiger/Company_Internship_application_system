@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Admin authorization check: either in /admins/{uid} collection or verified bootstrapped developer email
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'kusumabadiger10@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidRole(role) {
+      return role in [
+        'Frontend Developer',
+        'Backend Developer',
+        'Full-Stack Developer',
+        'AI/ML Engineer',
+        'UI/UX Designer',
+        'Graphic Designer',
+        'Digital Marketing Intern',
+        'Social Media Manager',
+        'Content Writer',
+        'Business Development Intern',
+        'Community Manager',
+        'HR Intern'
+      ];
+    }
+
+    function isValidApplication(data) {
+      return data.keys().hasAll([
+        'applicationId',
+        'fullName',
+        'email',
+        'college',
+        'pursuingYear',
+        'experienceLevel',
+        'internshipRole',
+        'status',
+        'submittedAt'
+      ]) &&
+      data.applicationId is string && data.applicationId.size() <= 64 &&
+      data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100 &&
+      data.email is string && data.email.size() > 3 && data.email.size() <= 120 &&
+      data.college is string && data.college.size() > 0 && data.college.size() <= 150 &&
+      data.experienceLevel in ['Fresher', 'Experienced'] &&
+      isValidRole(data.internshipRole) &&
+      data.status in ['Pending', 'Accepted', 'Rejected'];
+    }
+
+    // /applications collection
+    match /applications/{applicationId} {
+      allow get, list: if isAdmin();
+
+      // Only admins or backend operations can create directly via client SDK
+      allow create: if isAdmin() && isValidId(applicationId) && isValidApplication(incoming());
+
+      // Only admins can update status or offer letter details
+      allow update: if isAdmin() &&
+        isValidId(applicationId) &&
+        isValidApplication(incoming()) &&
+        // Prevent changing immutable IDs
+        incoming().applicationId == existing().applicationId &&
+        // Prevent terminal status modification: Accepted or Rejected cannot transition back or to each other
+        (existing().status == 'Pending' || existing().status == incoming().status);
+
+      allow delete: if isAdmin();
+    }
+
+    // /emailJobs collection
+    match /emailJobs/{jobId} {
+      allow read, write: if isAdmin() && isValidId(jobId);
+    }
+
+    // /admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isValidId(adminId);
+    }
+  }
+}

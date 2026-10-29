@@ -1,0 +1,176 @@
+[
+  {
+    "applicationId": "CT-APP-849201",
+    "fullName": "Aarav Sharma",
+    "email": "aarav.sharma@example.edu",
+    "college": "National Institute of Technology, Surathkal",
+    "pursuingYear": "3rd Year",
+    "experienceLevel": "Fresher",
+    "internshipRole": "Frontend Developer",
+    "submittedAt": "2026-10-26T14:15:18.214Z",
+    "status": "Pending",
+    "trackingToken": "ct_track_demo_01_a9f4e2b1c8d7",
+    "trackingTokenHash": "8d127821ca22668c072b51e559732fe013191e2edde926480ac5138b6dcb8970",
+    "schemaVersion": 1,
+    "emailJobs": [
+      {
+        "jobId": "job_seed_01",
+        "applicationId": "CT-APP-849201",
+        "emailType": "applicant_confirmation",
+        "recipient": "aarav.sharma@example.edu",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_01",
+        "createdAt": "2026-10-26T14:15:18.214Z"
+      },
+      {
+        "jobId": "job_seed_02",
+        "applicationId": "CT-APP-849201",
+        "emailType": "support_notification",
+        "recipient": "hr-support@companytech.internal",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_02",
+        "createdAt": "2026-10-26T14:15:18.214Z"
+      }
+    ]
+  },
+  {
+    "applicationId": "CT-APP-731940",
+    "fullName": "Priya Venkatesh",
+    "email": "priya.venkatesh@example.edu",
+    "college": "Birla Institute of Technology and Science, Pilani",
+    "pursuingYear": "4th Year",
+    "experienceLevel": "Experienced",
+    "internshipRole": "Backend Developer",
+    "submittedAt": "2026-10-24T14:15:18.215Z",
+    "status": "Accepted",
+    "decisionAt": "2026-10-27T14:15:18.215Z",
+    "decisionBy": "admin_usr_root",
+    "internshipDuration": "2 months",
+    "joiningDate": "2026-11-15",
+    "offerLetterPath": "offer-letters/CT-APP-731940/offer-letter.pdf",
+    "offerLetterGenerationStatus": "generated",
+    "offerLetterGeneratedAt": "2026-10-27T14:15:18.215Z",
+    "trackingToken": "ct_track_demo_02_e4b1c8d7a9f4",
+    "trackingTokenHash": "f2119e61a38c3efaa1dde0b942ee5d4d8746be34fbb44b849c36207c128365d6",
+    "schemaVersion": 1,
+    "emailJobs": [
+      {
+        "jobId": "job_seed_03",
+        "applicationId": "CT-APP-731940",
+        "emailType": "applicant_confirmation",
+        "recipient": "priya.venkatesh@example.edu",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_03",
+        "createdAt": "2026-10-24T14:15:18.215Z"
+      },
+      {
+        "jobId": "job_seed_04",
+        "applicationId": "CT-APP-731940",
+        "emailType": "acceptance_offer",
+        "recipient": "priya.venkatesh@example.edu",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_04",
+        "createdAt": "2026-10-27T14:15:18.215Z"
+      }
+    ]
+  },
+  {
+    "applicationId": "CT-APP-620485",
+    "fullName": "Rohan Mehta",
+    "email": "rohan.mehta@example.edu",
+    "college": "Delhi Technological University",
+    "pursuingYear": "2nd Year",
+    "experienceLevel": "Fresher",
+    "internshipRole": "AI/ML Engineer",
+    "submittedAt": "2026-10-22T14:15:18.215Z",
+    "status": "Rejected",
+    "decisionAt": "2026-10-25T14:15:18.215Z",
+    "decisionBy": "admin_usr_root",
+    "trackingToken": "ct_track_demo_03_c8d7a9f4e4b1",
+    "trackingTokenHash": "ef1a82bd23635d6b5a0c758d46ca1f74fe443c092eb77b91abf01ae74e79407b",
+    "schemaVersion": 1,
+    "emailJobs": [
+      {
+        "jobId": "job_seed_05",
+        "applicationId": "CT-APP-620485",
+        "emailType": "applicant_confirmation",
+        "recipient": "rohan.mehta@example.edu",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_05",
+        "createdAt": "2026-10-22T14:15:18.215Z"
+      },
+      {
+        "jobId": "job_seed_06",
+        "applicationId": "CT-APP-620485",
+        "emailType": "rejection_notice",
+        "recipient": "rohan.mehta@example.edu",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_seed_06",
+        "createdAt": "2026-10-25T14:15:18.215Z"
+      }
+    ]
+  },
+  {
+    "applicationId": "CT-APP-AV36DK",
+    "fullName": "Dev Test User",
+    "email": "test.candidate@companytech.internal",
+    "college": "State University of Technology",
+    "pursuingYear": "3rd Year",
+    "experienceLevel": "Fresher",
+    "internshipRole": "AI/ML Engineer",
+    "resumeName": null,
+    "resumePath": null,
+    "resumeBase64": null,
+    "submittedAt": "2026-10-29T14:15:44.420Z",
+    "status": "Accepted",
+    "trackingToken": "d28988e091f2610d55e6e8bfab166687",
+    "trackingTokenHash": "a9d35eb386e8bd33d90920e3e52e4c6370bb58eaeeabcc36030524343e8cb30d",
+    "schemaVersion": 1,
+    "emailJobs": [
+      {
+        "jobId": "job_conf_1793283344420",
+        "applicationId": "CT-APP-AV36DK",
+        "emailType": "applicant_confirmation",
+        "recipient": "test.candidate@companytech.internal",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_0fjfaxji_1793283344421",
+        "createdAt": "2026-10-29T14:15:44.422Z"
+      },
+      {
+        "jobId": "job_notif_1793283344422",
+        "applicationId": "CT-APP-AV36DK",
+        "emailType": "support_notification",
+        "recipient": "hr-support@companytech.internal",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_5x8xuxn0_1793283344422",
+        "createdAt": "2026-10-29T14:15:44.422Z"
+      },
+      {
+        "jobId": "job_offer_1793283368461",
+        "applicationId": "CT-APP-AV36DK",
+        "emailType": "acceptance_offer",
+        "recipient": "test.candidate@companytech.internal",
+        "status": "delivered",
+        "attemptCount": 1,
+        "providerMessageId": "msg_ct_e8iumobq_1793283368461",
+        "createdAt": "2026-10-29T14:16:08.461Z"
+      }
+    ],
+    "decisionAt": "2026-10-29T14:16:08.461Z",
+    "decisionBy": "admin_auth_user",
+    "internshipDuration": "3 months",
+    "joiningDate": "2026-11-20",
+    "offerLetterGenerationStatus": "generated",
+    "offerLetterGeneratedAt": "2026-10-29T14:16:08.461Z",
+    "offerLetterPath": "offer-letters/CT-APP-AV36DK/offer-letter.pdf",
+    "offerLetterBase64": "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"
+  }
+]
