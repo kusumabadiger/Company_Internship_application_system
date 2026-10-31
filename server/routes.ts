@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { DB, generateApplicationId, generateTrackingToken, hashToken } from './db';
 import { generateOfferLetterPdf } from './pdf';
-import { sendEmailJob } from './email';
+import { sendEmailJob, renderEmailTemplate } from './email';
 import { ApplicationRecord, EmailJobRecord, ExperienceLevel } from './types';
 
 const router = express.Router();
@@ -327,15 +327,48 @@ router.post('/admin/applications/:id/accept', async (req: Request, res: Response
     };
     DB.addEmailJob(emailJob);
 
+    if (emailResult.status === 'failed') {
+      console.warn(`[Acceptance Workflow] Candidate ${updatedApp.applicationId} accepted, but acceptance email delivery failed: ${emailResult.errorMessage}`);
+      return res.json({
+        success: true,
+        emailSent: false,
+        application: DB.getById(req.params.id),
+        emailError: emailResult.errorMessage,
+        message: `Candidate accepted and offer letter PDF generated. Notice: Acceptance email failed: ${emailResult.errorMessage}`,
+      });
+    }
+
+    console.log(`[Acceptance Workflow] Candidate ${updatedApp.applicationId} accepted and acceptance email dispatched. Provider Message ID: ${emailResult.providerMessageId}`);
     return res.json({
       success: true,
+      emailSent: true,
       application: DB.getById(req.params.id),
-      message: 'Application accepted and offer letter dispatched successfully.',
+      message: 'Application accepted and offer letter dispatched to applicant successfully.',
     });
   } catch (err) {
     console.error('Error accepting application:', err);
     return res.status(500).json({ error: 'Internal server error during acceptance workflow.' });
   }
+});
+
+/**
+ * Route Alias: POST /api/applications/accept
+ * Supports callers targeting /api/applications/accept with { id, applicationId, duration, joiningDate }
+ */
+router.post('/applications/accept', async (req: Request, res: Response) => {
+  const targetId = req.body.id || req.body.applicationId;
+  if (!targetId) {
+    return res.status(400).json({ error: 'Application ID is required in request body.' });
+  }
+  req.params.id = String(targetId);
+  // Forward to standard accept logic
+  const acceptHandler = (router as any).stack.find(
+    (layer: any) => layer.route && layer.route.path === '/admin/applications/:id/accept' && layer.route.methods.post
+  );
+  if (acceptHandler) {
+    return acceptHandler.route.stack[0].handle(req, res);
+  }
+  return res.status(500).json({ error: 'Internal routing error' });
 });
 
 /**
@@ -437,6 +470,25 @@ router.post('/admin/email-jobs/:jobId/retry', async (req: Request, res: Response
     console.error('Error retrying email job:', err);
     return res.status(500).json({ error: 'Failed to retry email job.' });
   }
+});
+
+/**
+ * Admin: Preview rendered email template
+ */
+router.get('/admin/applications/:id/email-preview/:emailType', (req: Request, res: Response) => {
+  const app = DB.getById(req.params.id);
+  if (!app) {
+    return res.status(404).json({ error: 'Application not found.' });
+  }
+  const emailType = req.params.emailType as any;
+  const rendered = renderEmailTemplate(emailType, app, app.trackingToken);
+  return res.json({
+    emailType,
+    recipient: emailType === 'support_notification' ? (process.env.SUPPORT_EMAIL || 'hr-support@companytech.internal') : app.email,
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+  });
 });
 
 /**

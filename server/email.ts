@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ApplicationRecord, EmailJobRecord, EmailType, EmailStatus } from './types';
 
 export interface EmailSendResult {
@@ -6,21 +7,42 @@ export interface EmailSendResult {
   errorMessage?: string;
 }
 
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'hr-support@companytech.internal';
-const EMAIL_FROM = process.env.EMAIL_FROM || 'Company Tech <admissions@companytech.internal>';
-const EMAIL_API_KEY = process.env.EMAIL_PROVIDER_API_KEY || process.env.RESEND_API_KEY || '';
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000';
+/**
+ * Reads dynamic environment configuration at dispatch time.
+ */
+export function getEmailConfig() {
+  const apiKey = (process.env.EMAIL_PROVIDER_API_KEY || process.env.RESEND_API_KEY || '').trim();
+  const rawFrom = (process.env.EMAIL_FROM || '').trim();
+  // If user configures a verified custom domain, use it.
+  // Otherwise, Resend requires onboarding@resend.dev during testing with unverified domains.
+  const emailFrom = rawFrom || 'Company Tech <onboarding@resend.dev>';
+  const supportEmail = (process.env.SUPPORT_EMAIL || 'hr-support@companytech.internal').trim();
+  const frontendUrl = (process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000').trim();
+
+  return { apiKey, emailFrom, supportEmail, frontendUrl };
+}
 
 /**
- * Renders the centralized email templates for Company Tech.
+ * Privacy-safe email masking for server logs (never logs raw email or secrets).
+ */
+export function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***';
+  const [user, domain] = email.split('@');
+  if (user.length <= 2) return `${user[0]}***@${domain}`;
+  return `${user[0]}***${user[user.length - 1]}@${domain}`;
+}
+
+/**
+ * Renders centralized email templates for Company Tech.
  */
 export function renderEmailTemplate(
   type: EmailType,
   app: ApplicationRecord,
   trackingToken?: string
 ): { subject: string; html: string; text: string } {
+  const { frontendUrl } = getEmailConfig();
   const token = trackingToken || app.trackingToken || 'CT-TOKEN';
-  const trackUrl = `${FRONTEND_URL}/track?id=${encodeURIComponent(app.applicationId)}&token=${encodeURIComponent(token)}`;
+  const trackUrl = `${frontendUrl}/track?id=${encodeURIComponent(app.applicationId)}&token=${encodeURIComponent(token)}`;
 
   switch (type) {
     case 'applicant_confirmation':
@@ -86,7 +108,7 @@ Internship Role: ${app.internshipRole}
 Submission Time: ${app.submittedAt}
 
 Review in Admin Dashboard:
-${FRONTEND_URL}/admin/applications/${app.applicationId}`,
+${frontendUrl}/admin/applications/${app.applicationId}`,
         html: `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
   <h3 style="color: #0f172a; margin-top: 0;">New Internship Application Submitted</h3>
@@ -100,43 +122,47 @@ ${FRONTEND_URL}/admin/applications/${app.applicationId}`,
     <tr><td style="padding: 6px 0; color: #64748b;">Submitted At:</td><td>${app.submittedAt}</td></tr>
   </table>
   <div style="margin-top: 20px;">
-    <a href="${FRONTEND_URL}/admin/applications/${app.applicationId}" style="background-color: #2563eb; color: #ffffff; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 600; display: inline-block;">Open Application in Dashboard</a>
+    <a href="${frontendUrl}/admin/applications/${app.applicationId}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600;">View in Admin Center</a>
   </div>
 </div>`,
       };
 
     case 'acceptance_offer':
       return {
-        subject: `Internship Offer Letter: ${app.internshipRole} — Company Tech`,
+        subject: `Congratulations! Internship Offer from Company Tech — ${app.internshipRole}`,
         text: `Dear ${app.fullName},
 
-Congratulations! We are delighted to extend an offer for the ${app.internshipRole} internship at Company Tech.
+Congratulations! Following a comprehensive review of your application, Company Tech is pleased to offer you the ${app.internshipRole} internship.
 
-Internship Particulars:
-- Application ID: ${app.applicationId}
-- Duration: ${app.internshipDuration || 'As agreed'}
+Key Particulars:
+- Role: ${app.internshipRole}
+- Duration: ${app.internshipDuration || '1 month'}
 - Joining Date: ${app.joiningDate || 'As agreed'}
+- Application Reference: ${app.applicationId}
 
-Your formal Internship Offer Letter PDF is attached to this email. Please review the letter and follow the instructions to confirm your onboarding.
+Your official Internship Offer Letter PDF has been generated and attached to this email. You can also view or download it at any time from your tracking portal:
+${trackUrl}
 
-Warm regards,
+Please review the attached offer letter for complete instructions.
+
+Sincerely,
 HR Support and Co-Founder
 Company Tech`,
         html: `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;">
-  <div style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <div style="border-bottom: 2px solid #16a34a; padding-bottom: 12px; margin-bottom: 20px;">
     <h2 style="margin: 0; color: #0f172a; font-size: 20px;">COMPANY TECH</h2>
-    <span style="font-size: 12px; color: #0284c7; font-weight: 600;">INTERNSHIP OFFER</span>
+    <span style="font-size: 12px; color: #16a34a; font-weight: 600;">INTERNSHIP OFFER EXTENDED</span>
   </div>
-  <p style="font-size: 15px;">Dear <strong>${app.fullName}</strong>,</p>
-  <p style="font-size: 15px; line-height: 1.5;">Congratulations! On behalf of Company Tech, we are delighted to offer you an internship position as a <strong>${app.internshipRole}</strong>.</p>
+  <p style="font-size: 15px; line-height: 1.5;">Dear <strong>${app.fullName}</strong>,</p>
+  <p style="font-size: 15px; line-height: 1.5;">Congratulations! We are delighted to inform you that you have been selected for the <strong>${app.internshipRole}</strong> internship at Company Tech.</p>
   
-  <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin: 20px 0;">
-    <div style="font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 8px;">Offer Summary</div>
-    <div style="font-size: 13px; color: #1e293b; line-height: 1.6;">
+  <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin: 20px 0; color: #166534;">
+    <div style="font-weight: 700; margin-bottom: 8px; font-size: 14px;">Internship Particulars:</div>
+    <div style="font-size: 13px; line-height: 1.6;">
       • <strong>Role:</strong> ${app.internshipRole}<br />
-      • <strong>Duration:</strong> ${app.internshipDuration}<br />
-      • <strong>Joining Date:</strong> ${app.joiningDate}<br />
+      • <strong>Duration:</strong> ${app.internshipDuration || '1 month'}<br />
+      • <strong>Joining Date:</strong> ${app.joiningDate || 'As agreed'}<br />
       • <strong>Application Reference:</strong> ${app.applicationId}
     </div>
   </div>
@@ -158,7 +184,6 @@ Company Tech`,
       };
 
     case 'rejection_notice':
-      // PRD Section 13.4 Centralized configurable demonstration rejection template
       return {
         subject: `Update on Your Internship Application — Company Tech`,
         text: `Dear ${app.fullName},
@@ -196,7 +221,8 @@ Company Tech`,
 }
 
 /**
- * Dispatches an email via Resend API or sandbox logger.
+ * Dispatches an email via Resend API or logs clear failure if unconfigured.
+ * Never prints or leaks secrets, and masks recipient email addresses in logs.
  */
 export async function sendEmailJob(
   type: EmailType,
@@ -204,68 +230,84 @@ export async function sendEmailJob(
   trackingToken?: string,
   pdfAttachmentBuffer?: Buffer
 ): Promise<EmailSendResult> {
+  const { apiKey, emailFrom, supportEmail } = getEmailConfig();
   const { subject, html, text } = renderEmailTemplate(type, app, trackingToken);
-  const recipient = type === 'support_notification' ? SUPPORT_EMAIL : app.email;
+  const recipient = type === 'support_notification' ? supportEmail : app.email;
+  const masked = maskEmail(recipient);
 
-  // If a live Resend API key is configured, perform live transactional dispatch
-  if (EMAIL_API_KEY && EMAIL_API_KEY.startsWith('re_') && EMAIL_API_KEY !== 're_sample_api_key_here') {
-    try {
-      const payload: Record<string, unknown> = {
-        from: EMAIL_FROM,
-        to: [recipient],
-        subject,
-        html,
-        text,
-      };
+  console.log(`[Email Dispatch] Triggering ${type} for app ${app.applicationId} -> ${masked}`);
 
-      if (pdfAttachmentBuffer && type === 'acceptance_offer') {
-        payload.attachments = [
-          {
-            filename: `Company-Tech-Offer-Letter-${app.applicationId}.pdf`,
-            content: pdfAttachmentBuffer.toString('base64'),
-          },
-        ];
-      }
+  // Check if live Resend API key is configured
+  const hasValidKey = apiKey && apiKey.startsWith('re_') && apiKey !== 're_sample_api_key_here';
 
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${EMAIL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        console.error('Resend API returned error:', response.status, errBody);
-        return {
-          status: 'failed',
-          errorMessage: `Provider returned HTTP ${response.status}: ${errBody.substring(0, 100)}`,
-        };
-      }
-
-      const data = (await response.json()) as { id?: string };
-      return {
-        status: 'sent',
-        providerMessageId: data.id || `resend_${Date.now()}`,
-      };
-    } catch (err) {
-      console.error('Failed to dispatch via Resend:', err);
-      return {
-        status: 'failed',
-        errorMessage: err instanceof Error ? err.message : 'Unknown network failure',
-      };
-    }
+  if (!hasValidKey) {
+    const errorMsg = 'EMAIL_PROVIDER_API_KEY (Resend API key starting with re_) is not configured in environment variables. Email was not dispatched to external inbox.';
+    console.warn(`[Email Dispatch WARNING] ${errorMsg}`);
+    return {
+      status: 'failed',
+      errorMessage: errorMsg,
+    };
   }
 
-  // Prototype & Demonstration mode: Accurately simulates transactional delivery
-  // Logs dispatch details and creates a valid provider-style message ID
-  const simulatedId = `msg_ct_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
-  console.log(`[Transactional Email Dispatched] To: ${recipient} | Type: ${type} | Ref: ${app.applicationId} | MsgId: ${simulatedId}`);
+  try {
+    const payload: Record<string, unknown> = {
+      from: emailFrom,
+      to: [recipient],
+      subject,
+      html,
+      text,
+    };
 
-  return {
-    status: 'delivered',
-    providerMessageId: simulatedId,
-  };
+    if (pdfAttachmentBuffer && type === 'acceptance_offer') {
+      payload.attachments = [
+        {
+          filename: `Company-Tech-Offer-Letter-${app.applicationId}.pdf`,
+          content: pdfAttachmentBuffer.toString('base64'),
+        },
+      ];
+      console.log(`[Email Dispatch] Attached PDF offer letter (${pdfAttachmentBuffer.length} bytes) to ${type}`);
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      let parsedError = errBody;
+      try {
+        const jsonErr = JSON.parse(errBody);
+        parsedError = jsonErr.message || errBody;
+      } catch {
+        // ignore
+      }
+
+      console.error(`[Email Dispatch ERROR] Provider returned HTTP ${response.status} for ${masked}: ${parsedError}`);
+      return {
+        status: 'failed',
+        errorMessage: `Provider HTTP ${response.status}: ${parsedError}`,
+      };
+    }
+
+    const data = (await response.json()) as { id?: string };
+    const providerMessageId = data.id || `resend_${Date.now()}`;
+    console.log(`[Email Dispatch SUCCESS] Provider confirmed delivery of ${type} to ${masked}. Message ID: ${providerMessageId}`);
+
+    return {
+      status: 'sent',
+      providerMessageId,
+    };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : 'Unknown network failure communicating with email provider';
+    console.error(`[Email Dispatch ERROR] Network exception for ${masked}:`, errMsg);
+    return {
+      status: 'failed',
+      errorMessage: errMsg,
+    };
+  }
 }

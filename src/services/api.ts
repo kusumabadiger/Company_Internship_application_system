@@ -130,4 +130,16 @@ export const API = {
     }
     return data;
   },
+
+  async getEmailPreview(
+    applicationId: string,
+    emailType: string
+  ): Promise<{ emailType: string; recipient: string; subject: string; html: string; text: string }> {
+    const res = await fetch(`/api/admin/applications/${applicationId}/email-preview/${emailType}`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to generate email preview.');
+    }
+    return data;
+  },
 };

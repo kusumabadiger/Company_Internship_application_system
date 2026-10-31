@@ -1,10 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { ApplicationRecord, EmailJobRecord, ApplicationStatus } from './types';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'applications.json');
+
+// Initialize Cloud Firestore connection
+let firestoreDb: any = null;
+try {
+  const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const app = getApps().length > 0 ? getApp() : initializeApp(config);
+    firestoreDb = getFirestore(app, config.firestoreDatabaseId);
+    console.log('[Company Tech DB] Connected to Cloud Firestore database:', config.firestoreDatabaseId);
+  }
+} catch (e) {
+  console.warn('[Company Tech DB] Cloud Firestore initialization deferred:', e);
+}
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -241,6 +257,33 @@ export const DB = {
   save(app: ApplicationRecord): void {
     applicationsCache.set(app.applicationId, app);
     saveStore();
+
+    // Persist application document directly to Cloud Firestore
+    if (firestoreDb) {
+      const firestoreDoc = {
+        applicationId: app.applicationId,
+        fullName: app.fullName,
+        email: app.email,
+        college: app.college,
+        pursuingYear: app.pursuingYear,
+        experienceLevel: app.experienceLevel,
+        internshipRole: app.internshipRole,
+        status: app.status,
+        submittedAt: app.submittedAt,
+        resumeName: app.resumeName || null,
+        resumePath: app.resumePath || null,
+        schemaVersion: app.schemaVersion || 1,
+        trackingTokenHash: app.trackingTokenHash || null,
+      };
+
+      setDoc(doc(firestoreDb, 'applications', app.applicationId), firestoreDoc)
+        .then(() => {
+          console.log(`[Cloud Firestore] Persisted application: ${app.applicationId}`);
+        })
+        .catch((err: any) => {
+          console.warn(`[Cloud Firestore] Notice on save: ${err.message}`);
+        });
+    }
   },
 
   /**
@@ -285,6 +328,30 @@ export const DB = {
 
     applicationsCache.set(applicationId, current);
     saveStore();
+
+    // Sync updated status and decision to Cloud Firestore
+    if (firestoreDb) {
+      const decisionDoc: Record<string, any> = {
+        status: targetStatus,
+        decisionAt: current.decisionAt,
+        decisionBy: current.decisionBy,
+      };
+      if (targetStatus === 'Accepted' && extra) {
+        decisionDoc.internshipDuration = current.internshipDuration;
+        decisionDoc.joiningDate = current.joiningDate;
+        decisionDoc.offerLetterGenerationStatus = current.offerLetterGenerationStatus;
+        decisionDoc.offerLetterGeneratedAt = current.offerLetterGeneratedAt;
+        decisionDoc.offerLetterPath = current.offerLetterPath;
+      }
+      setDoc(doc(firestoreDb, 'applications', applicationId), decisionDoc, { merge: true })
+        .then(() => {
+          console.log(`[Cloud Firestore] Synced decision for ${applicationId} (${targetStatus})`);
+        })
+        .catch((err: any) => {
+          console.warn(`[Cloud Firestore] Notice on decision sync: ${err.message}`);
+        });
+    }
+
     return { success: true, app: current };
   },
 
@@ -302,6 +369,28 @@ export const DB = {
       app.emailJobs.push(job);
     }
     saveStore();
+
+    // Persist email processing record to Cloud Firestore
+    if (firestoreDb) {
+      setDoc(
+        doc(firestoreDb, 'emailJobs', job.jobId),
+        {
+          jobId: job.jobId,
+          applicationId: job.applicationId,
+          emailType: job.emailType,
+          recipient: job.recipient,
+          status: job.status,
+          attemptCount: job.attemptCount,
+          providerMessageId: job.providerMessageId || null,
+          createdAt: job.createdAt,
+          lastAttemptAt: job.lastAttemptAt || null,
+          errorMessage: job.errorMessage || null,
+        },
+        { merge: true }
+      ).catch((err: any) => {
+        console.warn(`[Cloud Firestore] Email job sync notice: ${err.message}`);
+      });
+    }
   },
 
   getStats(): { total: number; pending: number; accepted: number; rejected: number } {

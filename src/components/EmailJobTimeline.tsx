@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, AlertCircle, RefreshCw, Clock, Send } from 'lucide-react';
+import { Mail, CheckCircle2, AlertCircle, RefreshCw, Clock, Send, Eye } from 'lucide-react';
 import { EmailJob, EmailStatus } from '../types';
 import { API } from '../services/api';
+import { EmailPreviewModal } from './EmailPreviewModal';
 
 interface EmailJobTimelineProps {
   jobs: EmailJob[];
+  applicationId?: string;
   onJobUpdated?: () => void;
 }
 
-export const EmailJobTimeline: React.FC<EmailJobTimelineProps> = ({ jobs, onJobUpdated }) => {
+export const EmailJobTimeline: React.FC<EmailJobTimelineProps> = ({
+  jobs,
+  applicationId,
+  onJobUpdated,
+}) => {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [previewJob, setPreviewJob] = useState<{ applicationId: string; emailType: string } | null>(
+    null
+  );
 
   const handleRetry = async (jobId: string) => {
     setRetryingId(jobId);
@@ -115,6 +124,21 @@ export const EmailJobTimeline: React.FC<EmailJobTimelineProps> = ({ jobs, onJobU
               </div>
               <div className="flex items-center gap-2 self-start sm:self-auto">
                 {statusBadge(job.status)}
+
+                <button
+                  onClick={() =>
+                    setPreviewJob({
+                      applicationId: applicationId || job.applicationId,
+                      emailType: job.emailType,
+                    })
+                  }
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
+                  title="Inspect rendered email template"
+                >
+                  <Eye size={11} />
+                  Preview
+                </button>
+
                 {job.status === 'failed' && (
                   <button
                     onClick={() => handleRetry(job.jobId)}
@@ -164,6 +188,15 @@ export const EmailJobTimeline: React.FC<EmailJobTimelineProps> = ({ jobs, onJobU
           </div>
         ))}
       </div>
+
+      {previewJob && (
+        <EmailPreviewModal
+          isOpen={!!previewJob}
+          onClose={() => setPreviewJob(null)}
+          applicationId={previewJob.applicationId}
+          emailType={previewJob.emailType}
+        />
+      )}
     </div>
   );
 };

@@ -357,7 +357,11 @@ export const AdminDetailView: React.FC = () => {
                 <RefreshCw size={11} /> Refresh Logs
               </button>
             </div>
-            <EmailJobTimeline jobs={application.emailJobs || []} onJobUpdated={fetchApplication} />
+            <EmailJobTimeline
+              jobs={application.emailJobs || []}
+              applicationId={application.applicationId}
+              onJobUpdated={fetchApplication}
+            />
           </div>
         </div>
       </div>
